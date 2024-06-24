@@ -1,0 +1,162 @@
+version: '3.8'
+
+services:
+
+  nginx:
+    build:
+      context: ./nginx
+      cache_from: [ "nginx:${CACHE_FROM_TAG:-latest}" ]
+    restart: always
+    depends_on:
+      - backend
+    volumes:
+      - local_static:/var/www/local_static/
+      - static:/var/www/static/:ro
+      - nuxt_portal:/var/www/nuxt:ro
+      - acme.sh:/acme.sh:delegated
+      - certs:/etc/nginx/certs
+    environment:
+      - ENVIRONMENT=production
+      - SITE_HOST
+      - MONITORING_HTPASSWD
+      - HTPASSWD
+      - BASIC_AUTH
+
+    ports:
+      - 80:80
+      - 443:443
+      - 9100:9100
+      - 9187:9187
+      - 8081:8080
+
+    logging:
+      driver: journald
+      options:
+        tag: nginx
+
+  backend:
+    restart: always
+    build:
+      context: ./backend
+      cache_from: [ "backend:${CACHE_FROM_TAG:-latest}" ]
+      args:
+        POETRY_PARAMS: "--no-dev"
+    entrypoint: ./entrypoint.production.sh
+    command: >
+      gunicorn config.wsgi:application -w ${GUNICORN_WORKERS:-5} --keep-alive 120 -t 80 -b 0.0.0.0:8000
+      --max-requests 1000 --max-requests-jitter 500 --access-logfile - --error-logfile -
+      --access-logformat '{"date":"%(t)s","method":"%(m)s","path":"%(U)s","query":"%(q)s","protocol":"%(H)s","status":%(s)s,"response_size":%(B)s,"referer":"%(f)s","user_agent":"%(a)s","time":%(D)s,"ip":"%({x-real-ip}i)s"}'
+    environment:
+      - DEBUG=False
+    depends_on:
+      - db
+    volumes:
+      - static:/app/static/:delegated
+    logging:
+      driver: journald
+      options:
+        tag: backend
+
+  db:
+    restart: always
+    ports:
+      - 127.0.0.1:5432:5432
+    command:
+      - "postgres"
+      - "-c"
+      - "max_connections=150"
+      - "-c"
+      - "shared_buffers=1GB" # 25% от текущей оперативной памяти
+      - "-c"
+      - "effective_cache_size=4GB"
+      - "-c"
+      - "work_mem=32MB" # shared_buffers поделить на max_connections. Если получается меньше 32МБ, то оставить 32МБ
+      - "-c"
+      - "maintenance_work_mem=512MB" # 10% от оперативной памяти
+      - "-c"
+      - "temp_file_limit=10GB"
+      - "-c"
+      - "idle_in_transaction_session_timeout=10s"
+      - "-c"
+      - "lock_timeout=1s"
+      - "-c"
+      - "statement_timeout=60s"
+      - "-c"
+      - "shared_preload_libraries=pg_stat_statements"
+      - "-c"
+      - "pg_stat_statements.max=10000"
+      - "-c"
+      - "pg_stat_statements.track=all"
+    logging:
+      driver: journald
+      options:
+        tag: db
+
+  celery:
+    restart: always
+
+  celery-beat:
+    restart: always
+
+  redis:
+    restart: always
+    logging:
+      driver: journald
+      options:
+        tag: redis
+
+  node-exporter:
+    restart: always
+    image: quay.io/prometheus/node-exporter
+    container_name: node-exporter
+    command:
+      - '--path.rootfs=/host'
+    pid: host
+    volumes:
+      - '/:/host:ro,rslave'
+
+  cadvisor:
+    restart: always
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    command:
+      - '-housekeeping_interval=10s'
+      - '-docker_only=true'
+
+  postgres-exporter:
+    restart: always
+    image: bitnami/postgres-exporter
+    container_name: postgres-exporter
+    environment:
+      - DATA_SOURCE_URI=db:5432/postgres?sslmode=disable
+      - DATA_SOURCE_USER=postgres
+      - DATA_SOURCE_PASS=${POSTGRES_PASSWORD}
+
+  promtail:
+    restart: always
+    image: promtail:${TAG:-latest}
+    build: ./promtail
+    tmpfs: /var/lib/promtail/
+    volumes:
+      - /var/log/journal/:/var/log/journal/:ro
+    command: -config.file=/promtail.yml
+
+
+volumes:
+  local_static:
+  nuxt_portal:
+  nuxt_agent:
+  acme.sh:
+  certs:
+  static:
+  redisdata:
+  postgresdata:
+  postgresdata_agent:
+  nuxt:
+  nginx_cache:
+  natsdata:

@@ -1,0 +1,15 @@
+<% while read -r item; do -%>
+
+server {
+    server_name <%= $(echo $item | awk '{print $1}')%>;
+
+    <% if [ "$TLS_MODE_SECOND" != "off" ]; then -%>
+    include ssl_params;
+    listen 443 ssl;
+    <% else -%>
+        listen 80;
+    <% fi -%>
+
+    return 301 <%= $(echo $item | awk '{print $2}')%>$request_uri;
+}
+<% done <"/etc/nginx/data.txt" -%>

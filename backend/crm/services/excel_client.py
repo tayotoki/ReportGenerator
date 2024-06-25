@@ -1,11 +1,11 @@
-import pathlib
-from abc import ABC, abstractmethod
-from collections.abc import Generator, Hashable
-from typing import Literal, Optional
+from typing import Literal
 
+import pathlib
 import pandas as pd
-from pandas import DataFrame
-from pandas._typing import SequenceNotStr
+from abc import ABC
+from typing import Generator, Optional, Sequence
+from collections.abc import Sequence as SequenceNotStr
+from typing import Hashable
 
 
 class BaseExcelClient(ABC):
@@ -21,36 +21,51 @@ class BaseExcelClient(ABC):
     def file(self) -> pd.ExcelFile:
         """Файл для парсинга в датафреймы pandas"""
 
-        return pd.ExcelFile(self.path)
+        return pd.ExcelFile(self.path, engine=self.engine)
 
     @property
     def sheets_list(self) -> list[str]:
         """Список страниц документа"""
 
         with self.file:
-            match self.sheets:
-                case str(self.sheets) as sheet_names:
-                    return [
-                        sheet for sheet in self.file.sheet_names
-                        if sheet in sheet_names
-                    ]
-                case _:
-                    return self.file.sheet_names
+            if isinstance(self.sheets, str):
+                return [
+                    sheet for sheet in self.file.sheet_names
+                    if sheet in self.sheets
+                ]
+            return self.file.sheet_names
+
+    def _get_header(self, sheet: str, header: int = 0) -> list:
+        """Получение заголовков из первого ряда таблицы"""
+
+        with self.file as xlsx:
+            df: pd.DataFrame = xlsx.parse(sheet, engine=self.engine, header=header, nrows=1)
+            return df.columns.tolist()
+
+    def _get_columns_by_names(self, sheet: str, names: SequenceNotStr[Hashable]) -> list:
+        """Получение ячеек `usecols` по именам заголовков"""
+
+        headers = self._get_header(sheet)
+        usecols = [i for i, col in enumerate(headers) if col in names]
+        return usecols
 
     def get_tables(
         self,
         names: Optional[SequenceNotStr[Hashable]] = None,
-        header: Optional[bool] = None,
-    ) -> Generator[DataFrame, None, None]:
+        header: Optional[int] = 0,
+    ) -> Generator[pd.DataFrame, None, None]:
         """Получение таблиц по каждому/переданному листу документа"""
 
         with self.file as xlsx:
             for sheet in self.sheets_list:
-                names = names if names else None
-                header = header if header else None
-                yield xlsx.parse(
+                usecols = None
+                if names:
+                    usecols = self._get_columns_by_names(sheet, names)
+
+                table: pd.DataFrame = xlsx.parse(
                     sheet,
                     engine=self.engine,
                     header=header,
-                    names=names,
+                    usecols=usecols,
                 )
+                yield table

@@ -19,6 +19,7 @@ class Material(models.Model):
         verbose_name="Единица измерения",
         choices=BasicUnitOfMeasurement.choices,
         max_length=12,
+        null=True,
     )
 
     def __str__(self):
@@ -47,7 +48,7 @@ class SimilarMaterialToRequest(models.Model):
         on_delete=models.CASCADE,
     )
     request = models.ForeignKey(
-        to="requests.Request",
+        to="request.Request",
         verbose_name="Заявка",
         on_delete=models.CASCADE,
     )

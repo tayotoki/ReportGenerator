@@ -1,6 +1,5 @@
-from abc import abstractmethod, ABC
-from collections.abc import Mapping, AsyncIterator
-from typing import Coroutine, Optional
+from abc import abstractmethod
+from collections.abc import Mapping
 
 
 class BaseConverter(Mapping):
@@ -11,8 +10,8 @@ class BaseConverter(Mapping):
     FIELDS_MAPPER: dict[str, str]
     UPDATE_FIELDS: list[str]
 
-    def __init__(self, api_data, action="create", **kwargs):
-        self._data = api_data
+    def __init__(self, data, action="create", **kwargs):
+        self._data = data
         self._action = action
         self._extra = kwargs
         self._clean_data = self.get_clean_data()
@@ -40,6 +39,10 @@ class BaseConverter(Mapping):
         }
 
         return cleanup_methods.get(self._action)
+
+    @abstractmethod
+    def check_fields(self, data: dict) -> bool:
+        """Проверка полей"""
 
     def get_clean_data(self):
         cleanup_method = self.get_cleanup_method()

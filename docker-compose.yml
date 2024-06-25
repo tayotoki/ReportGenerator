@@ -19,7 +19,7 @@ x-app_environment: &app_environment
 
 services:
   nginx:
-    image: nginx:latest
+    image: nginx
     volumes:
       - nginx_cache:/var/lib/nginx/proxy_cache
       - static:/var/www/static/
@@ -49,7 +49,7 @@ services:
 
 
   backend:
-    image: backend:${TAG:-latest}
+    image: backend
     build:
       context: ./backend
     <<: *app_environment
@@ -62,7 +62,7 @@ services:
       - redisdata:/data
 
   celery:
-    image: backend:${TAG:-latest}
+    image: backend
     command: celery -A config worker -l info -c 1 -n celery@dats.com -Q celery
     depends_on:
       - db
@@ -70,7 +70,7 @@ services:
     <<: *app_environment
 
   celery-beat:
-    image: registry.gitlab.idacloud.ru/idaproject/neometry/neometry-site/backend:${TAG:-latest}
+    image: backend
     command: celery -A config worker -l info -E -B
     depends_on:
       - db
@@ -78,7 +78,6 @@ services:
     <<: *app_environment
 
   flower:
-    image: flower:${TAG:-latest}
     command: >
       celery flower
       --address=0.0.0.0

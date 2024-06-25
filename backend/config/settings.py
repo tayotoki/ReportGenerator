@@ -14,8 +14,11 @@ TESTING = "test" in argv or any("pytest" in arg for arg in argv)
 DEBUG = getenv("DEBUG", "True") == "True" and not TESTING
 API_DOCS_ENABLE = getenv("API_DOCS_ENABLE", "True") == "True"
 
+CRM_SHEET_NAME = "Data"
+MOCK_CRM_DATA = BASE_DIR / "crm" / "mock_data" / "testing_data.xlsx"
+
 ALLOWED_HOSTS = ["*"]
-CSRF_TRUSTED_ORIGINS = ["localhost", "localhost:3000"]
+CSRF_TRUSTED_ORIGINS = ["http://localhost", "http://localhost:3000"]
 
 
 # Application definition
@@ -27,6 +30,13 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # app
+    "crm.apps.CrmConfig",
+    "materials.apps.MaterialsConfig",
+    "users.apps.UsersConfig",
+    "request.apps.RequestConfig",
+    # third-party
+    "django_filters",
 ]
 
 MIDDLEWARE = [
@@ -37,7 +47,6 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "django_user_agents.middleware.UserAgentMiddleware",
 ]
 if DEBUG:
     INSTALLED_APPS.append("debug_toolbar")

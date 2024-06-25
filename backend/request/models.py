@@ -10,7 +10,7 @@ class Request(models.Model):
         verbose_name="Номер заявки",
         max_length=9,
     )
-    batch = models.UUIDField(
+    batch = models.CharField(
         verbose_name="ID пакета",
     )
     state = models.ForeignKey(
@@ -70,24 +70,13 @@ class Request(models.Model):
         verbose_name="Время от создания до конца обработки",
         null=True,
     )
-    material_full_name = models.CharField(
+    material_full_name = models.TextField(
         verbose_name="Полное наименование изначальное",
-        max_length=512,
-    )
-    material_after_handle = models.ForeignKey(
-        to="material.Material",
-        on_delete=models.SET_NULL,
-        verbose_name="Материал после обработки",
-        related_name="requests",
     )
     technical_documentation = models.CharField(
         verbose_name="НТД",
         max_length=128,
     )
-
-    @property
-    def material_after_handle_full_name(self) -> str:
-        return self.material_after_handle.name
 
     @property
     def is_handled(self) -> bool:

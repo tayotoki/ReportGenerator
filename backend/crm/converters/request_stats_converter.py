@@ -1,7 +1,6 @@
-import uuid
-from datetime import datetime
+import re
+from datetime import datetime, timedelta
 from typing import TypeVar, Type
-from decimal import Decimal
 
 from request.models import (
     RequestState,
@@ -32,6 +31,14 @@ class RequestConverter(BaseConverter):
         "batch": "ID пакета"
     }
 
+    UPDATE_FIELDS = [
+        "state",
+        "coordination",
+        "status",
+        "finished",
+        "handle_time",
+    ]
+
     def cleanup_create_data(self):
         number: str = self.data.get(self.FIELDS_MAPPER["number"])
         state: Type[statuses] = self.handle_statuses(
@@ -46,7 +53,7 @@ class RequestConverter(BaseConverter):
             model_=RequestCoordination,
             value=self.data.get(self.FIELDS_MAPPER["coordination"])
         )
-        author: str = self.data.get(self.FIELDS_MAPPER["author"])
+        author_name: str = self.data.get(self.FIELDS_MAPPER["author"])
         file_name: str = self.data.get(self.FIELDS_MAPPER["file_name"])
         created: datetime = datetime.strptime(
             self.data.get(self.FIELDS_MAPPER["created"]),
@@ -55,24 +62,30 @@ class RequestConverter(BaseConverter):
         finished: datetime = datetime.strptime(
             time,
             "%d.%m.%Y %H:%M:%S"
-        ) if (time := self.data.get(self.FIELDS_MAPPER["finished"])) else None
-        handle_time: Decimal = Decimal(hours) if (
-            hours := self.data.get(self.FIELDS_MAPPER["handle_time"])
-        ) else None
+        ) if (time := self.data.get(self.FIELDS_MAPPER["finished"])) and isinstance(time, str) else None
+        handle_time: timedelta = self.cast_to_timedelta(
+            self.data.get(self.FIELDS_MAPPER["handle_time"])
+        )
         material_full_name: str = self.data.get(self.FIELDS_MAPPER["material_full_name"])
         technical_documentation: str = self.data.get(self.FIELDS_MAPPER["technical_documentation"])
-        batch: uuid.uuid4 = uuid.UUID(
-            self.data.get(self.FIELDS_MAPPER["batch"])
-        ).hex
+        batch: str = self.data.get(self.FIELDS_MAPPER["batch"])
+        is_duplicate: bool = self.is_duplicated(self.FIELDS_MAPPER["state"])
 
         return {
             key: value
             for key, value in locals().items()
-            if key != "self"
+            if key not in ("self", "time")
         }
 
     def cleanup_update_data(self):
         ...
+
+    def check_fields(self, data: dict) -> bool:
+        return True
+
+    @staticmethod
+    def is_duplicated(state: str) -> bool:
+        return state.startswith("Дубликат")
 
     @staticmethod
     def handle_statuses(model_: Type[statuses], value: str) -> Type[statuses]:
@@ -80,3 +93,14 @@ class RequestConverter(BaseConverter):
 
         obj, _ = model_._base_manager.get_or_create(name=value) # noqa
         return obj
+
+    @staticmethod
+    def cast_to_timedelta(hours: str) -> timedelta:
+        handle_time = None
+
+        if hours and re.match(r"\d{1,3}[.]\d{2}", hours):
+            hours, partial_hours = map(int, hours.split('.'))
+            minutes = (partial_hours * 60) // 100
+
+            handle_time = timedelta(hours=hours, minutes=minutes)
+        return handle_time

@@ -40,7 +40,7 @@ class RequestConverter(BaseConverter):
     ]
 
     def cleanup_create_data(self):
-        number: str = self.data.get(self.FIELDS_MAPPER["number"])
+        number: str = self.data.get(self.FIELDS_MAPPER["number"]).strip()
         state: Type[statuses] = self.handle_statuses(
             model_=RequestState,
             value=self.data.get(self.FIELDS_MAPPER["state"])
@@ -53,8 +53,8 @@ class RequestConverter(BaseConverter):
             model_=RequestCoordination,
             value=self.data.get(self.FIELDS_MAPPER["coordination"])
         )
-        author_name: str = self.data.get(self.FIELDS_MAPPER["author"])
-        file_name: str = self.data.get(self.FIELDS_MAPPER["file_name"])
+        author_name: str = self.data.get(self.FIELDS_MAPPER["author"]).strip()
+        file_name: str = self.data.get(self.FIELDS_MAPPER["file_name"]).strip()
         created: datetime = datetime.strptime(
             self.data.get(self.FIELDS_MAPPER["created"]),
             "%d.%m.%Y %H:%M:%S"
@@ -66,10 +66,14 @@ class RequestConverter(BaseConverter):
         handle_time: timedelta = self.cast_to_timedelta(
             self.data.get(self.FIELDS_MAPPER["handle_time"])
         )
-        material_full_name: str = self.data.get(self.FIELDS_MAPPER["material_full_name"])
+        material_full_name: str = self.data.get(self.FIELDS_MAPPER["material_full_name"]).strip()
         technical_documentation: str = self.data.get(self.FIELDS_MAPPER["technical_documentation"])
-        batch: str = self.data.get(self.FIELDS_MAPPER["batch"])
-        is_duplicate: bool = self.is_duplicated(self.FIELDS_MAPPER["state"])
+        batch: str = self.data.get(self.FIELDS_MAPPER["batch"]).strip()
+        is_duplicate: bool = self.is_duplicated(
+            self.data.get(
+                self.FIELDS_MAPPER["state"]
+            )
+        )
 
         return {
             key: value
@@ -85,7 +89,7 @@ class RequestConverter(BaseConverter):
 
     @staticmethod
     def is_duplicated(state: str) -> bool:
-        return state.startswith("Дубликат")
+        return state.strip().startswith("Дубликат")
 
     @staticmethod
     def handle_statuses(model_: Type[statuses], value: str) -> Type[statuses]:

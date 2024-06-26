@@ -2,9 +2,13 @@ from django.db import models
 
 from common.validators import validate_file_extension
 
+from .querysets import RequestQuerySet
+
 
 class Request(models.Model):
     """Заявка"""
+
+    objects = RequestQuerySet.as_manager()
 
     number = models.CharField(
         verbose_name="Номер заявки",

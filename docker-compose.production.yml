@@ -149,14 +149,10 @@ services:
 
 volumes:
   local_static:
-  nuxt_portal:
-  nuxt_agent:
   acme.sh:
   certs:
   static:
   redisdata:
   postgresdata:
   postgresdata_agent:
-  nuxt:
   nginx_cache:
-  natsdata:

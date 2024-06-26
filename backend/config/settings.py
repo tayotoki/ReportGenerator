@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     "request.apps.RequestConfig",
     # third-party
     "django_filters",
+    "drf_spectacular",
 ]
 
 MIDDLEWARE = [

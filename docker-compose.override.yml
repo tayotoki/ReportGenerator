@@ -35,4 +35,3 @@ volumes:
   postgresdata:
   nuxt:
   nginx_cache:
-  natsdata:

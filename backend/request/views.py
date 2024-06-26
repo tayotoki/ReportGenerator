@@ -41,7 +41,11 @@ class RequestStatsViewSet(ListModelMixin, GenericViewSet):
             .aggregate_stats()
         )
 
-        columns = list(filtered_data.values())
+        # TODO: закешировать результаты
+        non_filtered_data = self.get_queryset().aggregate_stats()
+
+        columns_for_period = list(filtered_data.values())
+        columns_for_all_period = list(non_filtered_data.values())
 
         data = {
             "Название": [
@@ -55,8 +59,8 @@ class RequestStatsViewSet(ListModelMixin, GenericViewSet):
                 "Пакетов",
                 "Пользователей"
             ],
-            "За указанный период": columns,
-            "За все время": columns
+            "За указанный период": columns_for_period,
+            "За все время": columns_for_all_period
         }
 
         df = pd.DataFrame(data)

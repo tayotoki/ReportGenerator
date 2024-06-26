@@ -16,6 +16,9 @@ exec_backend:
 test:
 	docker-compose exec backend pytest --create-db
 
+start_import:
+	docker-compose exec backend python manage.py start_import
+
 makemigrations:
 	docker-compose exec backend python manage.py makemigrations
 

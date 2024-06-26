@@ -1,11 +1,12 @@
-from django_filters import DateTimeFromToRangeFilter, FilterSet
+from django_filters import DateTimeFilter, FilterSet
 
 from .models import Request
 
 
 class RequestFilter(FilterSet):
-    created_range_filter = DateTimeFromToRangeFilter(field_name="created", label="Фильтр по периоду создания заявок")
+    start_date = DateTimeFilter(field_name="created", lookup_expr="gte")
+    end_date = DateTimeFilter(field_name="created", lookup_expr="lte")
 
     class Meta:
         model = Request
-        fields = ()
+        fields = ("start_date", "end_date")

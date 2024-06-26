@@ -55,16 +55,6 @@ class BaseLoader(abc.ABC):
         if not isinstance(instances_data, dict):
             raise TypeError("instances_data must be a dictionary")
 
-        # if instances_data:
-        #     update_instances = self.model._base_manager.filter(ref_id__in=instances_data)
-        #     for instance in update_instances:
-        #         for field_name, field_value in instances_data[instance.ref_id].items():
-        #             setattr(instance, field_name, field_value)
-        #
-        #     self.model._base_manager.bulk_update(update_instances, fields=self.converter.UPDATE_FIELDS)
-        #
-        #     self.count_updated_objects = len(instances_data)
-
     def run(self):
         """
         Запуск обновления данных

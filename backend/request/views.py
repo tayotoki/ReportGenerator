@@ -17,22 +17,7 @@ class RequestStatsViewSet(ListModelMixin, GenericViewSet):
     serializer_class = RequestStatsSerializer
     filterset_class = RequestFilter
     pagination_class = CustomPagination
-
-    def get_queryset(self):
-        queryset = Request.objects.select_related("state", "status")
-        match self.action:
-            case self.generate_report_by_excel.__name__:
-                queryset = (
-                    queryset
-                    .annotate_count()
-                    .annotate_duplicates_count()
-                    .annotate_create_state_count()
-                    .annotate_expansion_state_count()
-                    .annotate_is_finished_count()
-                    .annotate_update_info_status_count()
-                    .annotate_status_handling_count()
-                )
-        return queryset
+    queryset = Request.objects.select_related("state", "status")
 
     @extend_schema(
         tags=["Request"],
